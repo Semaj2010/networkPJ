@@ -3,7 +3,7 @@ import _thread
 from socket import *
 
 serverHost = 'localhost'  # 접속 주소
-serverPort = 9999  # 포트
+serverPort = 45678  # 포트
 
 
 def handler(socket):

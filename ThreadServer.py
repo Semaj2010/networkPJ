@@ -5,7 +5,7 @@ from socket import error as socket_error
 from threading import *
 
 HOST = ''
-PORT = 9999
+PORT = 45678
 
 
 class ThreadAccept(Thread):  # 사용자 접속을 받는 스레드 클래스
