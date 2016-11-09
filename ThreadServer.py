@@ -22,7 +22,7 @@ class ThreadAccept(Thread):  # 사용자 접속을 받는 스레드 클래스
         self.socket.settimeout(0.1)  # 100ms timeout을 줄것
         while ThreadAccept.shutdown == False:
             try:
-                # 듀플로 주소와 소켓을 얻어옴
+                # tuple로 주소와 소켓을 얻어옴
                 connection, address = self.socket.accept()
             except timeout:
                 continue
