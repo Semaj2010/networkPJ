@@ -11,8 +11,7 @@ BUFSIZE = 1024
 ADDR = (HOST,PORT)
 
 
-
-# Create Server Socket
+# create server socket
 servSock = socket(AF_INET, SOCK_STREAM)
 
 # Binding Server Socket

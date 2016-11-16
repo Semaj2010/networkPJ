@@ -1,5 +1,3 @@
-import subprocess
-import sys
 from socket import *
 from socket import error as socket_error
 from threading import *
@@ -95,4 +93,5 @@ while 1:  # 커멘드라인 루프
         acceptor.joinChildThreads()
         acceptor.join()  # acceptor thread가 끝날때 까지 기다린다.
         break
+        #쓰레드 종료
 print("Server Stop")
