@@ -27,6 +27,16 @@ class loginServer(Process):
         self.socket = socket(AF_INET, SOCK_STREAM)
         self.socket.bind((self.ip, self.port))
         self.socket.listen()
+        try:
+            self.clnt_socket, self.clnt_addr_info = self.socket.accept()
+        except Exception as e:
+            print('[InFO][%s] Error ' % time.ctime())
+        else:
+            print('[INFO][%s] %s new connection' % time.ctime(), self.clnt_addr_info[0])
+    # login 입력받아서 처리
+    def login(self):
+
+        pass
 
 
 
