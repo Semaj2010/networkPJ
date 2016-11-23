@@ -6,7 +6,7 @@ import sys
 from time import ctime
 
 HOST =''
-PORT=7124
+PORT=9999
 BUFSIZE = 1024
 ADDR = (HOST,PORT)
 

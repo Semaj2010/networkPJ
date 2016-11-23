@@ -7,6 +7,7 @@ class Book:
         self.authors = []      # 저자
         self.publisher = ""    # 출판사
         self.date = ""         # 출간일
+        self.fd = None         # pdf 파일
 
     def getName(self):
         return self.name

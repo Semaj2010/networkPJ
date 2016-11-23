@@ -1,5 +1,5 @@
 
-
+from launcher import *
 from xml.dom.minidom import parse, parseString
 from xml.etree import ElementTree
 
@@ -19,6 +19,10 @@ def printMenu():
     print("Add new book: a")
     print("sEarch Book Title: e")
     print("Make html: m")
+    print("-------------------------")
+    print("Get book data from isbn:g")
+    print("send mail : i")
+    print("sTart Web Service : t")
     print("=================")
 
 def launcherFunction(menu):
@@ -38,14 +42,29 @@ def launcherFunction(menu):
     elif menu == 'e':
         keyword = str(input('input keyword to search :'))
         printBookList(SearchBookTitle(keyword))
+    elif menu=='g':
+        isbn = str(input('input isbn to get'))
+        #isbn = '0596513984'
+        ret = getBookDataFromISBN(isbn)
+        addBook(ret)
     elif menu == 'm':
         keyword = str(input('input keyword code to the html :'))
         html = MakeHtmlDoc(SearchBookTitle(keyword))
         print("-----------------------------")
         print(html)
         print("-----------------------------")
+    elif menu == 'i':
+        # sendMain()
+        pass
+    elif menu == 't' :
+        # startWebService()
+        pass
+    elif menu == 'g' :
+        ISBN = str(input('insert ISBN :'))
+        print(getBookDataFromISBN(ISBN))
     else:
         print("error : unknown menu key")
+
 
 #### xml function implementation
 def LoadXMLFromFile():
