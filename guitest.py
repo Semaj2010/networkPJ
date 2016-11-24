@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow
 
 from PyQt5.QtWidgets import QAction, qApp
 
-from PyQt5.QtWidgets import (QLCDNumber, QSlider, QVBoxLayout)
+from PyQt5.QtWidgets import (QLCDNumber, QSlider, QVBoxLayout, QSizePolicy, QFontDialog, QLabel)
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal, QObject
 
@@ -38,6 +38,43 @@ set event on button - quit
 class Communicate(QObject):
 
     closeApp = pyqtSignal()
+
+
+
+class Example2(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):
+        vbox = QVBoxLayout()
+
+        btn = QPushButton('Dialog', self)
+        btn.setSizePolicy(QSizePolicy.Fixed,
+                          QSizePolicy.Fixed)
+
+        btn.move(20, 20)
+
+        vbox.addWidget(btn)
+
+        btn.clicked.connect(self.showDialog)
+
+        self.lbl = QLabel('Knowledge only matters', self)
+        self.lbl.move(130, 20)
+
+        vbox.addWidget(self.lbl)
+        self.setLayout(vbox)
+
+        self.setGeometry(300, 300, 250, 180)
+        self.setWindowTitle('Font dialog')
+        self.show()
+
+    def showDialog(self):
+        font, ok = QFontDialog.getFont()
+        if ok:
+            self.lbl.setFont(font)
+
 
 class Example(QMainWindow):
     def __init__(self):
@@ -140,12 +177,46 @@ class Example(QMainWindow):
         else:
             event.ignore()
 
+from PyQt5.QtWidgets import QTextEdit, QFileDialog
+class Example3(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
+        self.initUI()
+
+    def initUI(self):
+        self.textEdit = QTextEdit()
+        self.setCentralWidget(self.textEdit)
+        self.statusBar()
+
+        openFile = QAction(QIcon('open.png'), 'Open', self)
+        openFile.setShortcut('Ctrl+O')
+        openFile.setStatusTip('Open new File')
+        openFile.triggered.connect(self.showDialog)
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(openFile)
+
+        self.setGeometry(300, 300, 350, 300)
+        self.setWindowTitle('File dialog')
+        self.show()
+
+    def showDialog(self):
+        fname = QFileDialog.getOpenFileName(self, 'Open file', '/home')
+
+        if fname[0]:
+            f = open(fname[0], 'r')
+
+            with f:
+                data = f.read()
+                self.textEdit.setText(data)
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     ex = Example()
+    ex2 = Example2()
 
     sys.exit(app.exec_())

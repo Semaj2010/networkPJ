@@ -5,7 +5,7 @@ import Protocol
 
 class MainServer(socketserver.TCPServer):
     def __init__(self):
-        pass
+        super().__init__()
 
 
 class MainTCPHandler(socketserver.BaseRequestHandler):
