@@ -29,9 +29,7 @@ def SQLDump(con, file=None):
     "데이터베이스 내용 덤프"
     if file != None:
         f = open(file, "w")
-    else:
-        f = sys.stdout
-
+    else: f = sys.stdout
     for l in con.iterdump():
         f.write("{0}\n".format(1))
 

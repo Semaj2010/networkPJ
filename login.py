@@ -38,25 +38,35 @@ class Login(QDialog):
         else:
             print('Connect to Login server (%s:%s) Succeed' % self.serv_addr)
 
-        print(self.textName.text())
+        # print(self.textName.text())
+        logger = Protocol.Logger(also_print=True)
+        parser = Protocol.Parser(logger,Protocol)
         try:
             self.logindata = Protocol.LoginData(userID=self.textName.text(),passwd=self.textPass.text())
-            self.sock.sendall(self.logindata.serialize())
+            self.f = self.sock.makefile("rwb")
+            # self.sock.sendall(self.logindata.serialize())
+            logger.log_and_write(self.f,self.logindata)
         except Exception as e:
             print(e)
 
         try:
-            data = self.sock.recv(Protocol.LoginData.sizeof())
+            # data = self.sock.recv(Protocol.LoginData.sizeof())
+            data = parser.parse(self.f)
+            # self.logindata = Protocol.LoginData.parse(data)
+            print("what data is " , data)
             self.logindata = Protocol.LoginData.parse(data)
         except Exception as e:
-            print("read error")
+            print(e)
 
 
-        if self.logindata.cert_key is not None :
-            print(self.logindata.cert_key.decode())
+        if self.logindata.cert_key.sizeof() > 8:
+            print(self.logindata.cert_key)
             self.accept()
         else:
             QMessageBox.warning(self, 'Error', 'Bad user or password')
+
+    def getUserData(self):
+        return self.logindata
 
 class Window(QMainWindow):
     def __init__(self, parent=None):
