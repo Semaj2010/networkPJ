@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Form implementation generated from reading ui file '../MyBookShelf.ui'
 #
 # Created by: PyQt5 UI code generator 5.7
@@ -7,8 +5,19 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import socket
+import login
+import Protocol
 
 class Ui_MyBookShelf(object):
+    def __init__(self,main_server_address=None):
+        if(main_server_address):
+            self.main_server_address=main_server_address
+        else:
+            self.main_server_address=('localhost',56780)
+        self.logger = login.Logger()
+        self.parser = login.Parser(module=Protocol)
+
     def setupUi(self, MyBookShelf):
         MyBookShelf.setObjectName("MyBookShelf")
         MyBookShelf.resize(940, 739)
@@ -44,6 +53,7 @@ class Ui_MyBookShelf(object):
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.display_id)
         self.btn_login = QtWidgets.QPushButton(self.frame)
         self.btn_login.setObjectName("btn_login")
+        self.btn_login.clicked.connect(self.login)
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.btn_login)
         self.bookshelf = QtWidgets.QFrame(self.centralwidget)
         self.bookshelf.setGeometry(QtCore.QRect(20, 20, 691, 631))
@@ -84,13 +94,46 @@ class Ui_MyBookShelf(object):
         self.label.setText(_translate("MyBookShelf", "TextLabel"))
         self.menuMy.setTitle(_translate("MyBookShelf", "File"))
 
+    def requestMainServer(self):
+        try:
+            self.sock = socket.create_connection(self.main_server_address)
+            command = Protocol.MainRequest(content="login server")
+            f = self.sock.makefile("rwb",0)
+            # self.sock.sendall(command)
+            with f:
+                f.write(command.serialize())
+                data = self.parser.parse(f)
+                f.close()
+            print("received data : ", data)
+        except Exception as e:
+            print(e)
+            data=None
+        finally:
+            self.sock.close()
+        return data
+
+
+    def login(self):
+        content = bytes.decode(self.requestMainServer().content)
+        if content!="failed":
+            port = int(content)
+            login_serv_addr = ('localhost',port)
+            login_app = login.Login(serv_addr=login_serv_addr)
+            if login_app.exec() == QtWidgets.QDialog.Accepted:
+                self.user_data = login_app.getUserData()
+                self.display_id.setText(self.user_data.userId)
+                print(self.user_data)
+        else:
+            print(self.__class__ , "Login Failed")
+
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MyBookShelf = QtWidgets.QMainWindow()
-    ui = Ui_MyBookShelf()
+    ui = Ui_MyBookShelf(('localhost',56780))
     ui.setupUi(MyBookShelf)
     MyBookShelf.show()
     sys.exit(app.exec_())
+
 

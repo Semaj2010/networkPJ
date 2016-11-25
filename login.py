@@ -2,17 +2,9 @@ from PyQt5.QtWidgets import QDialog, QMainWindow
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QApplication
 from socket import socket, AF_INET, SOCK_STREAM, create_connection
 # from mainwindow import Ui_MainWindow
-import struct
-from common import *
 from Protocol import *
 
 HOST = '127.0.0.1'
-
-def send_one_message(sock,data):
-    length = len(data)
-    sock.sendall(struct.pack('!l',length))
-    sock.sendall(data)
-
 
 class Login(QDialog):
     def __init__(self, parent=None, serv_addr=()):
@@ -58,16 +50,30 @@ class Login(QDialog):
             self.logindata = data
         except Exception as e:
             print(e)
+        finally:
+            self.sock.close()
 
 
         if self.logindata.cert_key != b'':
             print(self.logindata.cert_key)
             self.accept()
         else:
-            QMessageBox.warning(self, 'Error', 'Bad user or password')
+            QMessageBox.warning(self,'Error', 'Bad user or password')
 
     def getUserData(self):
-        return self.logindata
+        return UserData(bytes.decode(self.logindata.userID),certKey=bytes.decode(self.logindata.cert_key))
+
+class UserData:
+    def __init__(self,userId,userName='',certKey=''):
+        self.userId=userId
+        self.userName=userName
+        self.certkey=certKey
+
+
+    def __str__(self):
+        return (self.userId, self.userName, self.certkey).__str__()
+
+
 
 class Window(QMainWindow):
     def __init__(self, parent=None):

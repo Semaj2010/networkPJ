@@ -1,82 +1,47 @@
 import socketserver
-
-
-
+import multiprocessing
+import LoginServer
 
 from Protocol import *
 
-class MainServer(socketserver.TCPServer):
-    def __init__(self):
-        super().__init__()
+class MainServer(socketserver.ForkingTCPServer):
+    def __init__(self,server_address,request_handler):
+        super().__init__(server_address,request_handler)
 
-from common import *
 
-class LoginServer(socketserver.ForkingTCPServer):
-    pass
+class MainHandler(TCPHandler):
+    login_port=9997
+    def main_request(self,data):
+        command = bytes.decode(data.content)
+        print(command)
 
-class LoginHandler(TCPHandler):
-    def login_data(self,data):
+        if command == "login server":
+            try:
+                server = LoginServer.LoginServer(('localhost',self.login_port),LoginServer.LoginTcpHandler)
+                data.content = str(self.login_port)
+                multi_process = multiprocessing.Process(target=server.handle_request)
+                multi_process.daemon=True
+                multi_process.start()
+            except Exception as e:
+                print(e)
+                data.content='failed'
+        else:
+            data.content="failed"
+
         return data
 
-class MainTCPHandler(TCPHandler):
-    """
-        main server
-    """
-    LOG_TO_SCREEN = True
+    def handler(self):
+        """
 
-    def login_data(self, data):
-        print(data)
-        self.logindata = data
-    # def handle(self):
-    #     self.data = self.request.recv(1024).strip()
-    #     print("{}wrote:".format(self.client_address),end=' ')
-    #     print(self.data)
-    #
-    #     # handle data
-    #
-    #     # Login Server Process
-    #     self.logindata = Protocol.LoginData.parse(self.data)
-        print(self.logindata.sizeof())
-
-        con = None
-        password = None
-        certkey = None
-        import sqlite3
-        try:
-            con = sqlite3.connect('test.db')
-            with con:
-                # uid = bytes.decode(self.logindata.userID)
-                uid = bytes.decode(self.logindata.userID)
-                print(uid)
-                cur = con.cursor()
-                cur.execute("SELECT password, certkey from users where id=:id",
-                            {"id":uid})
-                #con.commit()
-                row = cur.fetchone()
-                if(row):
-                    password = row[0]
-                    certkey = row[1]
-
-        except sqlite3.Error as e:
-            print(e)
-            if con:
-                con.rollback()
-        finally:
-            if con:
-                con.close()
-        # id, password db와 비교
-        if password == bytes.decode(self.logindata.passwd) :
-            print(password, certkey)
-            self.logindata.cert_key = certkey
-            # self.request.sendall(self.logindata.serialize())
-            return self.logindata
-        else:
-            pass
+        :return:
+        """
 
 
 if __name__ == '__main__':
-    HOST,PORT = "localhost", 9999
+    HOST,PORT = "localhost", 56780
 
-    server = LoggingTCPServer((HOST,PORT),MainTCPHandler)
+    server = socketserver.ForkingTCPServer((HOST,PORT),MainHandler)
 
     server.serve_forever()
+    server.shutdown()
+    server.server_close()
