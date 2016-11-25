@@ -1,13 +1,10 @@
 from protlib import *
 
 
-class BaseData(CStruct):
-    code = CShort(default=1)
 
-
-class LoginData(BaseData):
+class LoginData(CStruct):
     code = CShort(always=2)
-    userID = CString(length=20)
-    passwd = CString(length=50)
+    userID = CString(length=20,default='')
+    passwd = CString(length=50,default='')
     cert_key = CString(length=9,default='')
 

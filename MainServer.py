@@ -1,8 +1,9 @@
 import socketserver
 
-from protlib import TCPHandler
 
-import Protocol
+
+
+from Protocol import *
 
 class MainServer(socketserver.TCPServer):
     def __init__(self):
@@ -10,15 +11,22 @@ class MainServer(socketserver.TCPServer):
 
 from common import *
 
+class LoginServer(socketserver.ForkingTCPServer):
+    pass
+
+class LoginHandler(TCPHandler):
+    def login_data(self,data):
+        return data
+
 class MainTCPHandler(TCPHandler):
     """
         main server
     """
+    LOG_TO_SCREEN = True
+
     def login_data(self, data):
-        LOG_TO_SCREEN = True
         print(data)
         self.logindata = data
-
     # def handle(self):
     #     self.data = self.request.recv(1024).strip()
     #     print("{}wrote:".format(self.client_address),end=' ')
@@ -28,7 +36,7 @@ class MainTCPHandler(TCPHandler):
     #
     #     # Login Server Process
     #     self.logindata = Protocol.LoginData.parse(self.data)
-        print(self.logindata)
+        print(self.logindata.sizeof())
 
         con = None
         password = None
@@ -37,14 +45,18 @@ class MainTCPHandler(TCPHandler):
         try:
             con = sqlite3.connect('test.db')
             with con:
+                # uid = bytes.decode(self.logindata.userID)
                 uid = bytes.decode(self.logindata.userID)
+                print(uid)
                 cur = con.cursor()
                 cur.execute("SELECT password, certkey from users where id=:id",
                             {"id":uid})
                 #con.commit()
                 row = cur.fetchone()
-                password = row[0]
-                certkey = row[1]
+                if(row):
+                    password = row[0]
+                    certkey = row[1]
+
         except sqlite3.Error as e:
             print(e)
             if con:
@@ -65,6 +77,6 @@ class MainTCPHandler(TCPHandler):
 if __name__ == '__main__':
     HOST,PORT = "localhost", 9999
 
-    server = Protocol.LoggingTCPServer((HOST,PORT),MainTCPHandler)
+    server = LoggingTCPServer((HOST,PORT),MainTCPHandler)
 
     server.serve_forever()

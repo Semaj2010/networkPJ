@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QA
 from socket import socket, AF_INET, SOCK_STREAM, create_connection
 # from mainwindow import Ui_MainWindow
 import struct
+from common import *
+from Protocol import *
 
 HOST = '127.0.0.1'
 
@@ -26,7 +28,6 @@ class Login(QDialog):
         layout.addWidget(self.buttonLogin)
 
     def handleLogin(self):
-        import Protocol
         # 서버에다가 아이디랑 비밀번호 보내고, 로그인 성공 여부 받아옴(성공하면 인증키, 실패하면 실패값)
         if self.serv_addr == ():
            self.serv_addr = (HOST,9999)
@@ -39,11 +40,11 @@ class Login(QDialog):
             print('Connect to Login server (%s:%s) Succeed' % self.serv_addr)
 
         # print(self.textName.text())
-        logger = Protocol.Logger(also_print=True)
-        parser = Protocol.Parser(logger,Protocol)
+        logger = Logger(also_print=True)
+        parser = Parser(logger)
         try:
-            self.logindata = Protocol.LoginData(userID=self.textName.text(),passwd=self.textPass.text())
-            self.f = self.sock.makefile("rwb")
+            self.logindata = LoginData(userID=self.textName.text(),passwd=self.textPass.text())
+            self.f = self.sock.makefile("rwb",0)
             # self.sock.sendall(self.logindata.serialize())
             logger.log_and_write(self.f,self.logindata)
         except Exception as e:
@@ -54,12 +55,12 @@ class Login(QDialog):
             data = parser.parse(self.f)
             # self.logindata = Protocol.LoginData.parse(data)
             print("what data is " , data)
-            self.logindata = Protocol.LoginData.parse(data)
+            self.logindata = data
         except Exception as e:
             print(e)
 
 
-        if self.logindata.cert_key.sizeof() > 8:
+        if self.logindata.cert_key != b'':
             print(self.logindata.cert_key)
             self.accept()
         else:
