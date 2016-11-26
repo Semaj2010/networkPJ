@@ -7,7 +7,7 @@
 """
 import sys
 
-
+import popplerqt5
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
@@ -22,7 +22,7 @@ class PDFWindow(QMainWindow):
     def __init__(self, parent):
         super(PDFWindow,self).__init__()
         # Wrap a panel inside
-        self.panel = wx.Panel(self)
+        self.panel = QFrame(self)
         # Initialize variables
         self.n_page = 0
         self.scale = 1
@@ -32,13 +32,13 @@ class PDFWindow(QMainWindow):
         self.width = None
         self.height = None
         # Connect panel events
-        self.panel.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.panel.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
-        self.panel.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
+        # self.panel.Bind(wx.EVT_PAINT, self.OnPaint)
+        # self.panel.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        # self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+        # self.panel.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
 
     def LoadDocument(self, file):
-        self.document = poppler.document_new_from_file("file://" + file, None)
+        self.document = popplerqt5.document_new_from_file("file://" + file, None)
         self.n_pages = self.document.get_n_pages()
         self.current_page = self.document.get_page(self.n_page)
         self.width, self.height = self.current_page.get_size()

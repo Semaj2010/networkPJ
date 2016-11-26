@@ -1,6 +1,9 @@
 from protlib import *
 import _datetime
 
+
+FAIL_MSG = "failed"
+
 class MainRequest(CStruct):
     code = CShort(always=1)
     content = CString(length=100,default='')
@@ -16,4 +19,5 @@ class LoginData(CStruct):
 class BookData(CStruct):
     code = CShort(always=5)
     timestamp = CString(length=20, default=lambda: _datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    binary = CString(length=AUTOSIZED)
 

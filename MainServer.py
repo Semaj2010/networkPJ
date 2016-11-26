@@ -24,9 +24,11 @@ class MainHandler(TCPHandler):
                 multi_process.start()
             except Exception as e:
                 print(e)
-                data.content='failed'
+                data.content=FAIL_MSG
+        elif command == "mybooks":
+            pass
         else:
-            data.content="failed"
+            data.content=FAIL_MSG
 
         return data
 
@@ -35,6 +37,11 @@ class MainHandler(TCPHandler):
 
         :return:
         """
+
+class DataTransferServer(socketserver.TCPServer):
+    def __init__(self,server_address,RequestHandlerClass,bind_and_activate=True):
+        super().__init__(server_address,RequestHandlerClass,bind_and_activate)
+
 
 
 if __name__ == '__main__':

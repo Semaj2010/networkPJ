@@ -12,8 +12,14 @@ last edited: January 2015
 """
 
 import sys
+from PyQt5 import QtCore
+from PyQt5.QtGui import QPainter
+
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QHBoxLayout
 from PyQt5.QtWidgets import (QPushButton, QWidget,
                              QLineEdit, QApplication)
+from PyQt5.QtWidgets import QVBoxLayout
 
 
 class Button(QPushButton):
@@ -108,8 +114,95 @@ class Example2(QWidget):
         e.accept()
 
 
+"""
+ZetCode PyQt5 tutorial
+
+In this example, we dispay an image
+on the window.
+
+author: Jan Bodnar
+website: zetcode.com
+last edited: January 2015
+"""
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QFrame
+
+class BookFrame(QFrame):
+    def __init__(self,image_path,parent=None):
+        super(BookFrame,self).__init__(parent=parent)
+        self.image_path= image_path
+        self.initUI()
+
+    def initUI(self):
+        self.lbl = BookLabel(self.image_path)
+        # self.lbl.setPixmap(self.pixmap)
+
+        self.btn_read = QPushButton("READ",self)
+        self.btn_read.resize(self.btn_read.sizeHint())
+        self.btn_return = QPushButton("RETURN",self)
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(self.lbl)
+        hbox = QHBoxLayout()
+        vbox.addLayout(hbox)
+        hbox.addWidget(self.btn_read,0)
+        hbox.addWidget(self.btn_return,0)
+        self.setLayout(vbox)
+        self.resize(280,400)
+
+
+    def readBook(self):
+        # Viewer 띄우기
+        pass
+
+class BookLabel(QLabel):
+    def __init__(self, img):
+        super(BookLabel, self).__init__()
+        self.setFrameStyle(QFrame.StyledPanel)
+        self.pixmap = QPixmap(img)
+
+    def paintEvent(self, event):
+        size = self.size()
+        painter = QPainter(self)
+        point = QtCore.QPoint(0,0)
+        scaledPix = self.pixmap.scaled(size, Qt.KeepAspectRatio)
+        # start painting the label from left upper corner
+        point.setX((size.width() - scaledPix.width())/2)
+        point.setY((size.height() - scaledPix.height())/2)
+        print(point.x(), ' ', point.y())
+        painter.drawPixmap(point, scaledPix)
+
+
+class ExampleImage(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):
+        hbox = QVBoxLayout(self)
+        pixmap = QPixmap("data/cosmos.jpg")
+
+        lbl = QLabel(self)
+        lbl.setPixmap(pixmap)
+
+        hbox.addWidget(lbl)
+        self.setLayout(hbox)
+
+        self.move(300, 200)
+        self.setWindowTitle('Red Rock')
+        self.show()
+
+
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = Example2()
-    ex.show()
+    qm = QWidget()
+    qm.resize(800,500)
+    bf = BookFrame('data/cosmos.jpg',qm)
+    bf2 = BookFrame('data/little_prince.jpg',qm)
+    ql = QHBoxLayout(qm)
+    ql.addWidget(bf)
+    ql.addWidget(bf2)
+    qm.show()
     app.exec_()

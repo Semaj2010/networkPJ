@@ -1,11 +1,20 @@
 import sys
 
-def test():
-    print("hey, This is for test")
-    return 0
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+import popplerqt5
 
-def test2():
-    return 9999
+app = QApplication(sys.argv)
 
-if __name__ == "__main__":
-    test()
+pdfFile = open('Sample.pdf')
+d = popplerqt5.Poppler.Document.load(pdfFile)
+d.setRenderHint(popplerqt5.Poppler.Document.Antialiasing and popplerqt5.Poppler.Document.TextAntialiasing)
+
+page = 0
+pages = d.numPages() - 1
+while page < pages:
+	page += 1
+	print(page)
+
+sys.exit(app.exec_())
