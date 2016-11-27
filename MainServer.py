@@ -1,5 +1,8 @@
 import socketserver
 import multiprocessing
+
+import sqlite3
+
 import LoginServer
 
 from Protocol import *
@@ -11,8 +14,11 @@ class MainServer(socketserver.ForkingTCPServer):
 
 class MainHandler(TCPHandler):
     login_port=9997
+    dtp_port = 9921
     def main_request(self,data):
-        command = bytes.decode(data.content)
+        temp = bytes.decode(data.content)
+        temp = temp.split('/')
+        command = temp[0]
         print(command)
 
         if command == "login server":
@@ -26,7 +32,34 @@ class MainHandler(TCPHandler):
                 print(e)
                 data.content=FAIL_MSG
         elif command == "mybooks":
-            pass
+            # 클라이언트로부터 내 책 데이터 달라는 요청 올 겨우
+            # request client user data
+            con = None
+            certkey = None
+            try:
+                con = sqlite3.connect('data/db/test.db')
+                with con:
+                    uid = temp[1]
+                    print(uid)
+                    cur = con.cursor()
+                    cur.execute("SELECT certkey from users where id=:id",
+                                {"id":uid})
+                    #con.commit()
+                    row = cur.fetchone()
+                    if(row):
+                        certkey = row[1]
+            except sqlite3.Error as e:
+                print(e)
+                if con:
+                    con.rollback()
+            else:
+                if(certkey == temp[2]):
+                    #Success!
+                    #book data send
+                    data.content=str(self.dtp_port)
+                else:
+                    data.content=FAIL_MSG
+
         else:
             data.content=FAIL_MSG
 

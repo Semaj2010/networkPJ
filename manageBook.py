@@ -1,7 +1,7 @@
+from xml.dom.minidom import parse
+from xml.etree import ElementTree
 
 from launcher import *
-from xml.dom.minidom import parse, parseString
-from xml.etree import ElementTree
 
 ##### global
 loopFlag = 1

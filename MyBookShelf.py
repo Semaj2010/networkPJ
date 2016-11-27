@@ -5,7 +5,6 @@
 # WARNING! All changes made in this file will be lost!
 
 import socket
-
 from PyQt5 import QtCore, QtGui, QtWidgets as Qwidgt
 from PyQt5.QtWidgets import QGridLayout
 
@@ -23,6 +22,7 @@ class Ui_MyBookShelf(object):
         self.logger = login.Logger()
         self.parser = login.Parser(module=Protocol)
         self.user_data = None
+        self.sock = None
 
     def setupUi(self, MyBookShelf):
         MyBookShelf.setObjectName("MyBookShelf")
@@ -101,7 +101,7 @@ class Ui_MyBookShelf(object):
         _translate = QtCore.QCoreApplication.translate
         MyBookShelf.setWindowTitle(_translate("MyBookShelf", "MainWindow"))
         self.lbl_id.setText(_translate("MyBookShelf", "ID"))
-        self.display_id.setText(_translate("MyBookShelf", "sample"))
+        self.display_id.setText(_translate("MyBookShelf", "----"))
         self.btn_login.setText(_translate("MyBookShelf", "Login"))
         self.label.setText(_translate("MyBookShelf", "TextLabel"))
         self.menuMy.setTitle(_translate("MyBookShelf", "File"))
@@ -121,21 +121,24 @@ class Ui_MyBookShelf(object):
             print(e)
             data=None
         finally:
-            self.sock.close()
+            if self.sock:
+                self.sock.close()
         return data
 
     def login(self):
-        req = bytes.decode(self.requestMainServer("login server").content)
-        if req!=Protocol.FAIL_MSG:
-            port = int(req)
-            login_serv_addr = ('localhost',port)
-            login_app = login.Login(serv_addr=login_serv_addr)
-            if login_app.exec() == Qwidgt.QDialog.Accepted:
-                self.user_data = login_app.getUserData()
-                self.display_id.setText(self.user_data.userId)
-                print(self.user_data)
-        else:
-            print(self.__class__ , "Login Failed")
+        req = self.requestMainServer("login server")
+        if req:
+            req = bytes.decode(req.content)
+            if req!=Protocol.FAIL_MSG:
+                port = int(req)
+                login_serv_addr = ('localhost',port)
+                login_app = login.Login(serv_addr=login_serv_addr)
+                if login_app.exec() == Qwidgt.QDialog.Accepted:
+                    self.user_data = login_app.getUserData()
+                    self.display_id.setText(self.user_data.userId)
+                    print(self.user_data)
+            else:
+                print(self.__class__ , "Login Failed")
 
     def library(self):
         library = ELibraryWidget.ELibraryWidget(self.centralwidget.parent(),user=self.user_data)
@@ -146,6 +149,10 @@ class Ui_MyBookShelf(object):
         # 내가 가지고 있는 책들을 불러오는 기능
 
         # 서버에 내 책 불러오기 요청
+        t = "mybooks" + "/" + self.user_data.userId + "/" + self.user_data.certkey
+        data = Protocol.MainRequest(content=t)
+        recv_data = self.requestMainServer(data)
+
 
         # 불러와도 된다고 답장 받으면
 
@@ -169,9 +176,9 @@ class Ui_MyBookShelf(object):
         for position, name in zip(positions, names):
             if name == '':
                 button = BookFrame('clientdata/default.jpg')
+                print(name, *position)
             else:
                 button = BookFrame('clientdata/cosmos.jpg')
-                print(name)
             grid.addWidget(button, *position)
         return
 
@@ -188,6 +195,7 @@ class BookFrame(Qwidgt.QFrame):
         # self.lbl.setPixmap(self.pixmap)
 
         self.btn_read = Qwidgt.QPushButton("READ",self)
+        self.btn_read.clicked.connect(self.readBook)
         self.btn_return = Qwidgt.QPushButton("RETURN",self)
 
         vbox = Qwidgt.QVBoxLayout(self)
@@ -203,6 +211,7 @@ class BookFrame(Qwidgt.QFrame):
 
     def readBook(self):
         # Viewer 띄우기
+
         pass
 
 class BookLabel(Qwidgt.QLabel):

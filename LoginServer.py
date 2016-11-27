@@ -30,7 +30,7 @@ class LoginTcpHandler(protlib.TCPHandler):
         certkey = None
         import sqlite3
         try:
-            con = sqlite3.connect('test.db')
+            con = sqlite3.connect('data/db/test.db')
             with con:
                 uid = bytes.decode(self.logindata.userID)
                 print(uid)

@@ -1,20 +1,40 @@
 import sys
 
-from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-import popplerqt5
+from PyQt5.QtWidgets import *
+
+class CustomWindow(QMainWindow):
+    def paintEvent(self, event=None):
+        painter = QPainter(self)
+
+        painter.setOpacity(0.3)
+        painter.setBrush(Qt.white)
+        painter.setPen(QPen(Qt.white))
+        painter.drawRect(self.rect())
+
 
 app = QApplication(sys.argv)
 
-pdfFile = open('Sample.pdf')
-d = popplerqt5.Poppler.Document.load(pdfFile)
-d.setRenderHint(popplerqt5.Poppler.Document.Antialiasing and popplerqt5.Poppler.Document.TextAntialiasing)
+# Create the main window
+window = CustomWindow()
 
-page = 0
-pages = d.numPages() - 1
-while page < pages:
-	page += 1
-	print(page)
+# window.setWindowFlags(Qt.FramelessWindowHint)
+window.setAttribute(Qt.WA_NoSystemBackground, True)
+window.setAttribute(Qt.WA_TranslucentBackground, True)
 
+# Create the button
+pushButton = QPushButton(window)
+pushButton.setGeometry(QRect(240, 190, 90, 31))
+pushButton.setText("Finished")
+pushButton.clicked.connect(app.quit)
+
+# Center the button
+qr = pushButton.frameGeometry()
+cp = QDesktopWidget().availableGeometry().center()
+qr.moveCenter(cp)
+pushButton.move(qr.topLeft())
+
+# Run the application
+window.showFullScreen()
 sys.exit(app.exec_())

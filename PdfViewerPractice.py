@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
 
+
 class PDFWindow(QMainWindow):
     """ This example class implements a PDF Viewer Window, handling Zoom and Scrolling """
 
