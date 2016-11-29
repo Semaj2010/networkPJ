@@ -10,6 +10,9 @@ class MainRequest(CStruct):
     content = CString(length=100,default='')
     cert_key = CString(length=9,default='')
 
+class DataRequest(MainRequest):
+    code = CShort(always=3)
+
 class LoginData(CStruct):
     code = CShort(always=2)
     userID = CString(length=50,default='')

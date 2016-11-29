@@ -6,6 +6,7 @@ import sqlite3
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+database = '../../data/db/test.db'
 class LoginServer(protlib.LoggingTCPServer):
     pass
 
@@ -34,7 +35,7 @@ class LoginTcpHandler(protlib.TCPHandler):
         password = None
         certkey = None
         try:
-            con = sqlite3.connect('../../data/db/test.db')
+            con = sqlite3.connect(database)
             with con:
                 uid = bytes.decode(self.logindata.userID)
                 print(uid)

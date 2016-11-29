@@ -23,8 +23,7 @@ class MainHandler(TCPHandler):
         temp = bytes.decode(data.content)
         temp = temp.split('&')
         command = temp[0]
-        print(command)
-
+        logging.debug(command)
         if command == "login server":
             try:
                 data.content = str(self.login_port)
@@ -34,9 +33,9 @@ class MainHandler(TCPHandler):
         elif command == "mybooks":
             # 클라이언트로부터 내 책 데이터 달라는 요청 올 겨우
             # request client user data
-            data.content = SUCCESS_MSG+'localhost'+'&'+self.dtp_port
+            data.content = SUCCESS_MSG+'&'+'localhost'+'&'+str(self.dtp_port)
         else:
-            data.content=FAIL_MSG
+            data.content = FAIL_MSG
 
         return data
 

@@ -11,7 +11,8 @@ from PyQt5.QtWidgets import QGridLayout
 
 from src import Protocol
 from src.client import ELibraryWidget, logindialog
-
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Ui_MyBookShelf(object):
     def __init__(self,main_server_address=None,user_data=None):
@@ -23,6 +24,7 @@ class Ui_MyBookShelf(object):
         self.parser = logindialog.Parser(module=Protocol)
         self.user_data = None
         self.sock = None
+        self.data_sock = None
 
     def setupUi(self, MyBookShelf):
         MyBookShelf.setObjectName("MyBookShelf")
@@ -109,35 +111,44 @@ class Ui_MyBookShelf(object):
     def requestMainServer(self,content):
         try:
             self.sock = socket.create_connection(self.main_server_address)
-            command = Protocol.MainRequest(content= content)
+            if self.user_data:
+                ckey = self.user_data.certkey
+            else: ckey=None
+            command = Protocol.MainRequest(content= content,cert_key=ckey)
             f = self.sock.makefile("rwb",0)
             # self.sock.sendall(command)
             with f:
                 f.write(command.serialize())
                 data = self.parser.parse(f)
                 f.close()
-            print("received data : ", data)
+            logging.debug("received data : " + str(data))
         except Exception as e:
-            print(e)
+            logging.debug(e)
             data=None
         else:
             self.sock.close()
         return data
 
-    def requestDtpServer(self, content):
+    def requestDataServer(self, content):
         try:
-            self.sock = socket.create_connection(self.dtp_server_address)
-            send_data = Protocol.MainRequest(content=content)
-            f = self.sock.makefile("rwb",0)
+            self.data_sock = socket.create_connection(self.dtp_server_address)
+            send_data = Protocol.DataRequest(content=content,cert_key=(self.user_data.certkey))
+            logging.debug(send_data)
+            f = self.data_sock.makefile("rwb",0)
             with f:
                 f.write(send_data.serialize())
                 recv_data = self.parser.parse(f)
-                f.close()
         except Exception as e:
-            print(e)
+            logging.debug(e)
             recv_data=None
         else:
-            self.sock.close()
+            try:
+                pass
+            except Exception as e:
+                pass
+        finally:
+            if self.data_sock:
+                self.data_sock.close()
         return recv_data
 
     def login(self):
@@ -152,7 +163,7 @@ class Ui_MyBookShelf(object):
                     self.user_data = login_app.getUserData()
                     self.display_id.setText(self.user_data.userId)
                     self.loadMyBooks()
-                    print(self.user_data)
+                    logging.debug(self.user_data)
             else:
                 print(self.__class__ , "Login Failed")
 
@@ -165,15 +176,17 @@ class Ui_MyBookShelf(object):
         # 내가 가지고 있는 책들을 불러오는 기능
 
         # 서버에 내 책 불러오기 요청
-        t = "mybooks" + "&" + self.user_data.userId + "&" + self.user_data.certkey
+        t = "mybooks" # + "&" + self.user_data.userId + "&" + self.user_data.certkey
         recv_data = self.requestMainServer(t)
-        print(recv_data)
+        logging.debug(str(recv_data))
+        if recv_data == b"" :
+            return
         # 불러와도 된다고 답장 받으면
         contents = bytes.decode(recv_data.content).split("&")
-        self.dtp_server_address = (contents[1], contents[2])
+        self.dtp_server_address = (contents[1], int(contents[2]))
         # 서버에서 data 받아오기 (book info, pdf binary data, image data)
-
-
+        rdata = self.requestDataServer("mybooks"+"&"+self.user_data.userId)
+        logging.debug(rdata)
         # 책 image와 data 로드
         return
 
