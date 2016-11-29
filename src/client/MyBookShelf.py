@@ -5,12 +5,12 @@
 # WARNING! All changes made in this file will be lost!
 
 import socket
+
 from PyQt5 import QtCore, QtGui, QtWidgets as Qwidgt
 from PyQt5.QtWidgets import QGridLayout
 
-import ELibraryWidget
-import Protocol
-import login
+from src import Protocol
+from src.client import ELibraryWidget, logindialog
 
 
 class Ui_MyBookShelf(object):
@@ -18,9 +18,9 @@ class Ui_MyBookShelf(object):
         if(main_server_address):
             self.main_server_address=main_server_address
         else:
-            self.main_server_address=('localhost',56780)
-        self.logger = login.Logger()
-        self.parser = login.Parser(module=Protocol)
+            self.main_server_address=('localhost',56789)
+        self.logger = logindialog.Logger()
+        self.parser = logindialog.Parser(module=Protocol)
         self.user_data = None
         self.sock = None
 
@@ -120,28 +120,44 @@ class Ui_MyBookShelf(object):
         except Exception as e:
             print(e)
             data=None
-        finally:
-            if self.sock:
-                self.sock.close()
+        else:
+            self.sock.close()
         return data
+
+    def requestDtpServer(self, content):
+        try:
+            self.sock = socket.create_connection(self.dtp_server_address)
+            send_data = Protocol.MainRequest(content=content)
+            f = self.sock.makefile("rwb",0)
+            with f:
+                f.write(send_data.serialize())
+                recv_data = self.parser.parse(f)
+                f.close()
+        except Exception as e:
+            print(e)
+            recv_data=None
+        else:
+            self.sock.close()
+        return recv_data
 
     def login(self):
         req = self.requestMainServer("login server")
         if req:
             req = bytes.decode(req.content)
-            if req!=Protocol.FAIL_MSG:
+            if req!= Protocol.FAIL_MSG:
                 port = int(req)
                 login_serv_addr = ('localhost',port)
-                login_app = login.Login(serv_addr=login_serv_addr)
+                login_app = logindialog.LoginDialog(serv_addr=login_serv_addr)
                 if login_app.exec() == Qwidgt.QDialog.Accepted:
                     self.user_data = login_app.getUserData()
                     self.display_id.setText(self.user_data.userId)
+                    self.loadMyBooks()
                     print(self.user_data)
             else:
                 print(self.__class__ , "Login Failed")
 
     def library(self):
-        library = ELibraryWidget.ELibraryWidget(self.centralwidget.parent(),user=self.user_data)
+        library = ELibraryWidget.ELibraryWidget(self.centralwidget.parent(), user=self.user_data)
         library.show()
 
 
@@ -149,16 +165,14 @@ class Ui_MyBookShelf(object):
         # 내가 가지고 있는 책들을 불러오는 기능
 
         # 서버에 내 책 불러오기 요청
-        t = "mybooks" + "/" + self.user_data.userId + "/" + self.user_data.certkey
-        data = Protocol.MainRequest(content=t)
-        recv_data = self.requestMainServer(data)
-
-
+        t = "mybooks" + "&" + self.user_data.userId + "&" + self.user_data.certkey
+        recv_data = self.requestMainServer(t)
+        print(recv_data)
         # 불러와도 된다고 답장 받으면
-
-        # 내 User Data를 Server로 전송
-
+        contents = bytes.decode(recv_data.content).split("&")
+        self.dtp_server_address = (contents[1], contents[2])
         # 서버에서 data 받아오기 (book info, pdf binary data, image data)
+
 
         # 책 image와 data 로드
         return
@@ -238,7 +252,7 @@ if __name__ == "__main__":
     import sys
     app = Qwidgt.QApplication(sys.argv)
     MyBookShelf = Qwidgt.QMainWindow()
-    ui = Ui_MyBookShelf(('localhost',56780))
+    ui = Ui_MyBookShelf(('localhost',56789))
     ui.setupUi(MyBookShelf)
     MyBookShelf.show()
     sys.exit(app.exec_())

@@ -3,6 +3,7 @@ import _datetime
 
 
 FAIL_MSG = "failed"
+SUCCESS_MSG = "success"
 
 class MainRequest(CStruct):
     code = CShort(always=1)

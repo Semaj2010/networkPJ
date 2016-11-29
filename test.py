@@ -1,9 +1,11 @@
 import sys
 
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
 
+from PyQt5.QtWidgets import *
+"""
 class CustomWindow(QMainWindow):
     def paintEvent(self, event=None):
         painter = QPainter(self)
@@ -38,3 +40,24 @@ pushButton.move(qr.topLeft())
 # Run the application
 window.showFullScreen()
 sys.exit(app.exec_())
+"""
+class MyWindow(QDialog):    # any super class is okay
+    def __init__(self, parent=None):
+        super(MyWindow, self).__init__(parent)
+        self.button = QPushButton('Press')
+        layout = QHBoxLayout()
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+        self.button.clicked.connect(self.create_child)
+    def create_child(self):
+        # here put the code that creates the new window and shows it.
+        child = MyWindow(self)
+        child.show()
+
+
+if __name__ == '__main__':
+    # QApplication created only here.
+    app = QApplication([])
+    window = MyWindow()
+    window.show()
+    app.exec_()

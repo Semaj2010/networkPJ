@@ -1,14 +1,15 @@
+from socket import create_connection
+
 from PyQt5.QtWidgets import QDialog, QMainWindow
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QApplication
-from socket import socket, AF_INET, SOCK_STREAM, create_connection
-# from mainwindow import Ui_MainWindow
-from Protocol import *
+
+from src.Protocol import *
 
 HOST = '127.0.0.1'
 
-class Login(QDialog):
+class LoginDialog(QDialog):
     def __init__(self, parent=None, serv_addr=()):
-        super(Login, self).__init__(parent)
+        super(LoginDialog, self).__init__(parent)
         self.serv_addr = serv_addr
         self.textName = QLineEdit(self)
         self.textPass = QLineEdit(self)
@@ -85,7 +86,7 @@ if __name__ == '__main__':
 
     import sys
     app = QApplication(sys.argv)
-    login = Login()
+    login = LoginDialog()
 
     if login.exec_() == QDialog.Accepted:
         window = Window()

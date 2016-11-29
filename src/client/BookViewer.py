@@ -47,13 +47,14 @@ class BookViewer(QtWidgets.QWidget):
         self.fpath = file_path
         self.memo_dict = memo_dict
         self.binary_data = binary_data
+        self.current_memo_wglist = []
         self.initUI()
         self.show()
 
     def initUI(self):
         self.pdf_to_text(self.fpath)
 
-        self.setGeometry(200,100,1100,800)
+        self.setGeometry(250,100,1100,800)
         self.btn_prev = QtWidgets.QPushButton("Previous Page",self)
         self.btn_next = QtWidgets.QPushButton("Next Page",self)
         # add memo button
@@ -61,6 +62,7 @@ class BookViewer(QtWidgets.QWidget):
 
         self.btn_next.clicked.connect(self.next_page)
         self.btn_prev.clicked.connect(self.prev_page)
+        self.btn_memo.clicked.connect(self.add_memo)
 
         self.page_label_1 = QtWidgets.QLabel("1")
         label = QtWidgets.QLabel("Pages")
@@ -87,29 +89,35 @@ class BookViewer(QtWidgets.QWidget):
         self.show_memo()
 
     def next_page(self):
-        if(self.page_now+2 > len(self.page_frames)):
+        pn = self.page_now
+        if(pn+2 > len(self.page_frames)):
             return
-        self.page_hbox.replaceWidget(self.page_frames[self.page_now],self.page_frames[self.page_now+2])
-        if(self.page_now+3 < len(self.page_frames)):
-            self.page_hbox.replaceWidget(self.page_frames[self.page_now+1],self.page_frames[self.page_now+3])
+        self.page_hbox.replaceWidget(self.page_frames[pn],self.page_frames[self.page_now+2])
+        if(pn+3 < len(self.page_frames)):
+            self.page_hbox.replaceWidget(self.page_frames[pn+1],self.page_frames[self.page_now+3])
         # self.page_hbox.removeWidget(self.page_frames[self.page_1])
         # self.page_hbox.removeWidget(self.page_frames[self.page_2])
-        self.page_frames[self.page_now].setParent(None)
-        self.page_frames[self.page_now+1].setParent(None)
+        self.page_frames[pn].setParent(None)
+        self.page_frames[pn+1].setParent(None)
         self.page_now+=2
         self.page_label_1.setText(str(self.page_now+1) + "")
         self.page_label_2.setText(str(self.page_now+2))
         self.show_memo()
 
     def prev_page(self):
-        if(self.page_now-1 < 0):
+        pn = self.page_now
+        if(pn-1 < 0):
             return
-        self.page_hbox.replaceWidget(self.page_frames[self.page_now],self.page_frames[self.page_now-2])
-        self.page_hbox.replaceWidget(self.page_frames[self.page_now+1],self.page_frames[self.page_now-1])
+        self.page_hbox.replaceWidget(self.page_frames[pn],self.page_frames[pn-2])
+        if(pn+1 < len(self.page_frames)):
+            self.page_hbox.replaceWidget(self.page_frames[pn+1],self.page_frames[pn-1])
+        else:
+            self.page_hbox.addWidget(self.page_frames[pn-1])
         # self.page_hbox.removeWidget(self.page_frames[self.page_1])
         # self.page_hbox.removeWidget(self.page_frames[self.page_2])
-        self.page_frames[self.page_now].setParent(None)
-        self.page_frames[self.page_now+1].setParent(None)
+        self.page_frames[pn].setParent(None)
+        if(pn +1 < len(self.page_frames)):
+            self.page_frames[pn+1].setParent(None)
         self.page_now-=2
         self.page_label_1.setText(str(self.page_now+1) + "")
         self.page_label_2.setText(str(self.page_now+2))
@@ -119,16 +127,40 @@ class BookViewer(QtWidgets.QWidget):
         # show current page memos
         pn = self.page_now
         current_memo_list = []
+        points = [(i*190,j*200) for i in range(5) for j in range(4)]
+        # close current memo widget
+        for m in self.current_memo_wglist:
+            m.close()
+        self.current_memo_wglist.clear()
         try:
-            current_memo_list = self.memo_dict[str(pn+1)]+self.memo_dict[str(pn+2)]
+            if(str(pn+1) in self.memo_dict):
+                current_memo_list+=self.memo_dict[str(pn+1)]
+            if(str(pn+2) in self.memo_dict):
+                current_memo_list+=self.memo_dict[str(pn+2)]
+            # current_memo_list.append(self.memo_dict[str(pn+1)]+self.memo_dict[str(pn+2)])
         except KeyError as e:
             print(e)
-        for x in current_memo_list:
-            print(x)
-            m = MemoWidget(x,self)
+        for s in current_memo_list:
+            print(s)
+            m = MemoWidget(s,parent=self)
+            self.current_memo_wglist.append(m)
+            x, y = points.pop(0)
+            print(x, y)
+            m.setGeometry(x+200,y+100,150,150)
             m.show()
         return
 
+    def add_memo(self):
+        new_memo = MemoWidget(None,True,self)
+        self.current_memo_wglist.append(new_memo)
+        new_memo.show()
+
+    def save_memo(self,mw_text):
+        if str(self.page_now+1) in self.memo_dict.keys():
+            self.memo_dict[str(self.page_now+1)].append(mw_text)
+        else:
+            self.memo_dict[str(self.page_now+1)] = [mw_text]
+        self.show_memo()
 
     def pdf_to_text(self,_pdf_file_path):
         pdf_content = PyPDF2.PdfFileReader(open(_pdf_file_path, "rb"))
@@ -176,17 +208,31 @@ class MemoWidget(QtWidgets.QDialog):
         self.memo = memo
         if editMode:
             self.content = QtWidgets.QTextEdit(memo,self)
+            self.savebutton = QtWidgets.QPushButton("save",self)
+            self.savebutton.clicked.connect(self.save)
+            hbox = QtWidgets.QVBoxLayout(self)
+            hbox.addWidget(self.content,9)
+            hbox.addWidget(self.savebutton)
         else:
+            # scroll = QtWidgets.QScrollArea(self)
             self.content = QtWidgets.QLabel(memo,self)
+            self.content.setWordWrap(True)
+            # scroll.setWidget(self.content)
+            self.content.setSizePolicy(QtWidgets.QSizePolicy.Ignored,QtWidgets.QSizePolicy.Ignored)
 
         self.setAttribute(Qt.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
 
+    def save(self):
+        bw = self.parentWidget()
+        text = self.content.toPlainText()
+        if(isinstance(bw,BookViewer)):
+            bw.save_memo(text)
 
     def paintEvent(self, event=None):
         painter = QPainter(self)
 
-        painter.setOpacity(0.3)
+        painter.setOpacity(0.4)
         painter.setBrush(Qt.white)
         painter.setPen(QPen(Qt.white))
         painter.drawRect(self.rect())
