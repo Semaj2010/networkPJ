@@ -7,11 +7,16 @@ SUCCESS_MSG = "success"
 
 class MainRequest(CStruct):
     code = CShort(always=1)
-    content = CString(length=100,default='')
+    content = CString(length=240,default='')
     cert_key = CString(length=9,default='')
 
-class DataRequest(MainRequest):
+class DataRequest(CStruct):
     code = CShort(always=3)
+    command = CString(length=30,default='')
+    file_count=CInt(default=0)
+    file_name = CArray(5,CString(length=30),default=['','','','',''])
+    file_size=CArray(5,CInt,default=[0,0,0,0,0])
+    cert_key = CString(length=9,default='')
 
 class LoginData(CStruct):
     code = CShort(always=2)
