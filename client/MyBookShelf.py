@@ -9,7 +9,14 @@ import socket
 
 from PyQt5 import QtCore, QtGui, QtWidgets as Qwidgt
 from PyQt5.QtWidgets import QGridLayout
-from src.client import ELibraryWidget
+
+import BookViewer
+from client import ELibraryWidget
+import os.path
+
+READ_SIZE = 1024
+
+here = lambda x : os.path.join(os.path.dirname(os.path.pardir),os.path.pardir,x)
 
 import Protocol
 from client import logindialog
@@ -27,6 +34,7 @@ class Ui_MyBookShelf(object):
         self.user_data = None
         self.sock = None
         self.data_sock = None
+        self.book_data = None
 
     def setupUi(self, MyBookShelf):
         MyBookShelf.setObjectName("MyBookShelf")
@@ -137,21 +145,50 @@ class Ui_MyBookShelf(object):
             self.data_sock = socket.create_connection(self.dtp_server_address)
             send_data = Protocol.DataRequest(command=content, cert_key=(self.user_data.certkey))
             logging.debug(send_data)
-            f = self.data_sock.makefile("rwb",0)
-            with f:
+            with self.data_sock.makefile("rwb",0) as f:
                 f.write(send_data.serialize())
                 recv_data = self.parser.parse(f)
+
                 logging.debug(recv_data)
         except Exception as e:
             logging.debug(e)
             recv_data = None
         else:
             try:
-                # receive file data
+                # temp = self.data_sock.recv(recv_data.file_size[0])
+                for i in range(recv_data.file_count):
+                    size = 0
+                    with open(here("clientdata/"+bytes.decode(recv_data.file_name[i])+".pdf"),"wb") as save_file:
+                        while recv_data.file_size[i] > size:
+                            if recv_data.file_size[i] - size < READ_SIZE:
+                                temp = self.data_sock.recv(recv_data.file_size[i] - size)
+                            else:
+                                temp = self.data_sock.recv(READ_SIZE)
+                            size += READ_SIZE
+                            save_file.write(temp)
+                            # logging.debug(temp)
+                    logging.debug(size)
 
-                pass
+                for i in range(recv_data.file_count):
+                    size = 0
+                    with open(here("clientdata/"+bytes.decode(recv_data.file_name[i])+".jpg"),"wb") as save_file:
+                        while recv_data.img_file_size[i] > size:
+                            if recv_data.img_file_size[i] - size < READ_SIZE:
+                                temp = self.data_sock.recv(recv_data.img_file_size[i] - size)
+                            else:
+                                temp = self.data_sock.recv(READ_SIZE)
+                            size += READ_SIZE
+                            save_file.write(temp)
+                            # logging.debug(temp)
+
+
+                            # receive file data
+                            # with self.data_sock.makefile("rwb,0") as f:
+                            # send ACK
+                            #     f.write(Protocol.DataTranferRequest())
+
             except Exception as e:
-                pass
+                logging.debug(e)
         finally:
             if self.data_sock:
                 self.data_sock.close()
@@ -174,7 +211,7 @@ class Ui_MyBookShelf(object):
                 print(self.__class__ , "Login Failed")
 
     def library(self):
-        library = ELibraryWidget.ELibraryWidget(self.centralwidget.parent(), user=self.user_data)
+        library = ELibraryWidget.ELibraryWidget(self.dtp_server_address,parent=self.centralwidget.parent(), user=self.user_data)
         library.show()
 
 
@@ -193,58 +230,79 @@ class Ui_MyBookShelf(object):
         # 서버에서 data 받아오기 (book info, pdf binary data, image data)
         rdata = self.requestDataServer("mybooks"+"&"+self.user_data.userId)
         # 책 image와 data 로드
+        self.book_data = [bytes.decode(bookname) for bookname in rdata.file_name if bookname != '']
+        logging.debug(self.book_data)
+
+        self.showMyBooks()
         return
 
     def showMyBooks(self):
-        path = "clientdata/"
-        grid = QGridLayout()
-        self.bookshelf.setLayout(grid)
+        path = here("clientdata/")
+        grid = self.bookshelf.layout()
+        if grid is None:
+            grid = QGridLayout(self.bookshelf)
 
-        names = ["" for i in range(12)]
+        for i in reversed(range(grid.count())):
+            grid.itemAt(i).widget().setParent(None)
+
+
+        if self.book_data:
+            names = self.book_data
+        else:
+            names = ['' for i in range(7)]
 
         print(names)
         positions = [(i, j) for i in range(3) for j in range(4)]
 
         for position, name in zip(positions, names):
             if name == '':
-                button = BookFrame('clientdata/default.jpg')
+                one_book_frame = BookFrame()
                 print(name, *position)
             else:
-                button = BookFrame('clientdata/cosmos.jpg')
-            grid.addWidget(button, *position)
+                one_book_frame = BookFrame(path + name, window=self.centralwidget.parent())
+            grid.addWidget(one_book_frame, *position)
         return
 
 class BookFrame(Qwidgt.QFrame):
-    def __init__(self,image_path,parent=None):
+    def __init__(self, book_path=None, parent=None, window=None):
         super(BookFrame,self).__init__(parent=parent)
-        if image_path is not None and not image_path.endswith(".jpg"):
-            image_path += ".jpg"
-        self.image_path= image_path
+        if not(book_path):
+            book_path = here('clientdata/default')
+        self.image_path = book_path + ".jpg"
+        self.pdf_path = book_path + ".pdf"
+        self.window = window
         self.initUI()
 
     def initUI(self):
         self.lbl = BookLabel(self.image_path)
         # self.lbl.setPixmap(self.pixmap)
 
-        self.btn_read = Qwidgt.QPushButton("READ",self)
-        self.btn_read.clicked.connect(self.readBook)
-        self.btn_return = Qwidgt.QPushButton("RETURN",self)
-
         vbox = Qwidgt.QVBoxLayout(self)
-        vbox.addWidget(self.lbl)
-        vbox.addWidget(self.btn_read,0)
         hbox = Qwidgt.QHBoxLayout()
+
+        if not(self.pdf_path.endswith('default.pdf')):
+            self.btn_read = Qwidgt.QPushButton("READ",self)
+            self.btn_read.clicked.connect(self.readBook)
+            self.btn_return = Qwidgt.QPushButton("RETURN",self)
+            hbox.addWidget(self.btn_read)
+            hbox.addWidget(self.btn_return)
+
+        vbox.addWidget(self.lbl)
         vbox.addLayout(hbox)
-        hbox.addWidget(self.btn_read)
-        hbox.addWidget(self.btn_return)
         self.setLayout(vbox)
         self.resize(250,400)
 
 
     def readBook(self):
         # Viewer 띄우기
+        if self.pdf_path:
+            viewer_widget = BookViewer.BookViewer(self.pdf_path,parent=self.window)
+            viewer_widget.show()
 
+    def returnBook(self):
+        # return book to libaray server
         pass
+
 
 class BookLabel(Qwidgt.QLabel):
     def __init__(self, img):
@@ -268,11 +326,11 @@ class BookLabel(Qwidgt.QLabel):
 
 if __name__ == "__main__":
     import sys
+    print(here('clinetdata'))
     app = Qwidgt.QApplication(sys.argv)
     MyBookShelf = Qwidgt.QMainWindow()
     ui = Ui_MyBookShelf(('localhost',56789))
     ui.setupUi(MyBookShelf)
     MyBookShelf.show()
     sys.exit(app.exec_())
-
 

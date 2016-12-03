@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from socket import create_connection
 
 from PyQt5.QtWidgets import QDialog, QMainWindow

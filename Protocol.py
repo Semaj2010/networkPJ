@@ -14,8 +14,13 @@ class DataRequest(CStruct):
     code = CShort(always=3)
     command = CString(length=30,default='')
     file_count=CInt(default=0)
-    file_name = CArray(5,CString(length=30),default=['','','','',''])
-    file_size=CArray(5,CInt,default=[0,0,0,0,0])
+    file_name = CArray(7,CString(length=30),default=['','','','','','',''])
+    file_size=CArray(7,CInt,default=[0,0,0,0,0,0,0])
+    img_file_size = CArray(7,CInt,default=[0,0,0,0,0,0,0])
+    cert_key = CString(length=9,default='')
+
+class DataTranferRequest(CStruct):
+    code = CShort(always=4)
     cert_key = CString(length=9,default='')
 
 class LoginData(CStruct):

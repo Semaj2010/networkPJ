@@ -1,11 +1,14 @@
+# -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import *
 import sys
+import socket
 
 class ELibraryWidget(QMainWindow):
-    def __init__(self,parent=None,user=None):
+    def __init__(self,server_address,user=None,parent=None):
         super().__init__(parent=parent)
         self.initUI()
         self.user = user
+        self.server_address = server_address
 
     def initUI(self):
 
@@ -22,6 +25,15 @@ class ELibraryWidget(QMainWindow):
         self.show()
 
 
+    def loadBookList(self):
+        # connect to server and request book list
+        sock = socket.create_connection(self.server_address)
+
+
+
+        pass
+
+
     def borrow_book(self):
         # 선택한 리스트의 책 대출하기
         book = self.listbox.selectedItems()
@@ -34,5 +46,5 @@ class ELibraryWidget(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = ELibraryWidget()
+    ex = ELibraryWidget(('localhost',9921))
     app.exec()

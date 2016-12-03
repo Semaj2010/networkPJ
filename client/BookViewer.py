@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import io
 from PyQt5 import QtCore
 
@@ -41,7 +42,7 @@ def pdf_page_to_png(src_pdf, pagenum = 0, resolution = 72,):
 
     return img
 
-class BookViewer(QtWidgets.QWidget):
+class BookViewer(QtWidgets.QMainWindow):
     def __init__(self,file_path,memo_dict=None,binary_data=None,parent=None):
         super(BookViewer,self).__init__(parent)
         self.fpath = file_path
@@ -54,9 +55,10 @@ class BookViewer(QtWidgets.QWidget):
     def initUI(self):
         self.pdf_to_text(self.fpath)
 
+        self.setCentralWidget(QtWidgets.QWidget())
         self.setGeometry(250,100,1100,800)
-        self.btn_prev = QtWidgets.QPushButton("Previous Page",self)
-        self.btn_next = QtWidgets.QPushButton("Next Page",self)
+        self.btn_prev = QtWidgets.QPushButton("Previous Page")
+        self.btn_next = QtWidgets.QPushButton("Next Page")
         # add memo button
         self.btn_memo = QtWidgets.QPushButton("Add Memo")
 
@@ -68,7 +70,8 @@ class BookViewer(QtWidgets.QWidget):
         label = QtWidgets.QLabel("Pages")
         self.page_label_2 = QtWidgets.QLabel("2")
 
-        vbox = QtWidgets.QVBoxLayout(self)
+        vbox = QtWidgets.QVBoxLayout()
+        self.centralWidget().setLayout(vbox)
         hbox = QtWidgets.QHBoxLayout()
 
         self.page_hbox = QtWidgets.QHBoxLayout()
@@ -90,7 +93,7 @@ class BookViewer(QtWidgets.QWidget):
 
     def next_page(self):
         pn = self.page_now
-        if(pn+2 > len(self.page_frames)):
+        if(pn+2 > len(self.page_frames)-1):
             return
         self.page_hbox.replaceWidget(self.page_frames[pn],self.page_frames[self.page_now+2])
         if(pn+3 < len(self.page_frames)):
@@ -124,6 +127,8 @@ class BookViewer(QtWidgets.QWidget):
         self.show_memo()
 
     def show_memo(self):
+        if not(self.memo_dict):
+            return
         # show current page memos
         pn = self.page_now
         current_memo_list = []
@@ -242,7 +247,7 @@ import sys
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     testmemo = {'1':['sunshine','hello'], '2':["Are you hungry"]}
-    bv = BookViewer("data/books/Carl_Sagan_Cosmos.pdf",testmemo,None)
+    bv = BookViewer("../data/books/little_prince.pdf",testmemo,None)
     # m = MemoWidget(testmemo['1'][0])
     app.exec()
     # text = textract.process("data/books/cosmos.epub")

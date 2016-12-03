@@ -4,10 +4,12 @@ import sqlite3
 import protlib
 
 import Protocol
+import os.path
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+here = lambda x : os.path.join(os.path.dirname(__file__),os.path.pardir,x)
 
-database = '../data/db/test.db'
+DATABASE = here('data/db/test.db')
 class LoginServer(protlib.LoggingTCPServer):
     pass
 
@@ -36,7 +38,7 @@ class LoginTcpHandler(protlib.TCPHandler):
         password = None
         certkey = None
         try:
-            con = sqlite3.connect(database)
+            con = sqlite3.connect(DATABASE)
             with con:
                 uid = bytes.decode(self.logindata.userID)
                 print(uid)
