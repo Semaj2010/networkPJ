@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 import io
-from PyQt5 import QtCore
-
+import xml.etree.ElementTree as xmletree
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QMargins
-from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPainter,QPen,QFont
 import PyPDF2
-import textract
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QMessageBox
 from wand.image import Image
+import os.path
+here = lambda x : os.path.join(os.path.dirname(os.path.pardir),os.path.pardir,x)
 
 _info_style = """
     QTextEdit{
@@ -43,10 +42,14 @@ def pdf_page_to_png(src_pdf, pagenum = 0, resolution = 72,):
     return img
 
 class BookViewer(QtWidgets.QMainWindow):
-    def __init__(self,file_path,memo_dict=None,binary_data=None,parent=None):
+    def __init__(self,file_path,book_title=None,memo_dict=None,binary_data=None,parent=None):
         super(BookViewer,self).__init__(parent)
         self.fpath = file_path
-        self.memo_dict = memo_dict
+        self.book_title = book_title
+        if memo_dict:
+            self.memo_dict = memo_dict
+        else:
+            self.memo_dict = {}
         self.binary_data = binary_data
         self.current_memo_wglist = []
         self.initUI()
@@ -89,6 +92,7 @@ class BookViewer(QtWidgets.QMainWindow):
         hbox.addStretch(1)
         hbox.addWidget(self.btn_next)
         vbox.addLayout(hbox)
+        self.xml_to_memo()
         self.show_memo()
 
     def next_page(self):
@@ -167,6 +171,38 @@ class BookViewer(QtWidgets.QMainWindow):
             self.memo_dict[str(self.page_now+1)] = [mw_text]
         self.show_memo()
 
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Message', "Will you save your memos?", QMessageBox.Yes |
+                                     QMessageBox.No | QMessageBox.Cancel, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.memo_to_xml()
+            for wg in self.current_memo_wglist:
+                wg.close()
+            event.accept()
+        elif reply == QMessageBox.Cancel:
+            event.ignore()
+        else:
+            for wg in self.current_memo_wglist:
+                wg.close()
+            event.accept()
+
+    def memo_to_xml(self):
+        createXMLFromMemo(self.book_title,self.memo_dict).write(here('clientdata/'+self.book_title)+".xml")
+
+    def xml_to_memo(self):
+        try:
+            doc = LoadXMLFromFile(here('clientdata/'+self.book_title+".xml"))
+            self.memo_dict = {}
+            elems_note = doc.getiterator("note")
+            for note in elems_note:
+                if note.attrib['page'] in self.memo_dict.keys():
+                    self.memo_dict[note.attrib['page']].append(note.text)
+                else:
+                    self.memo_dict[note.attrib['page']] = [note.text]
+        except IOError as e:
+            pass
+
     def pdf_to_text(self,_pdf_file_path):
         pdf_content = PyPDF2.PdfFileReader(open(_pdf_file_path, "rb"))
         # 'Rb' Opens a file for reading only in binary format.
@@ -242,12 +278,56 @@ class MemoWidget(QtWidgets.QDialog):
         painter.setPen(QPen(Qt.white))
         painter.drawRect(self.rect())
 
+def createXMLFromMemo(title,memo_dict):
+    root = xmletree.Element("book")
+    xmletree.SubElement(root,"title").text = title
+    xmletree.SubElement(root,"memo")
+    for page in memo_dict:
+        for memo in memo_dict[page]:
+            ele = xmletree.Element("note")
+            ele.attrib["page"]=page
+            ele.text = memo
+            root.find("memo").append(ele)
+    indent(root)
+    return xmletree.ElementTree(root)
+
+def LoadXMLFromFile(fileName):
+    try:
+        xmlFD = open(fileName)
+    except IOError:
+        print("invalid file name or path")
+        raise IOError
+    else:
+        try:
+            dom = xmletree.parse(xmlFD)
+        except Exception:
+            print("loading fail!!")
+        else:
+            print("XML Document loading complete")
+            return dom
+        raise IOError
+
+def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
 
 import sys
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     testmemo = {'1':['sunshine','hello'], '2':["Are you hungry"]}
-    bv = BookViewer("../data/books/little_prince.pdf",testmemo,None)
+    bv = BookViewer("../data/books/little_prince.pdf",book_title="little_prince",memo_dict=testmemo)
     # m = MemoWidget(testmemo['1'][0])
     app.exec()
     # text = textract.process("data/books/cosmos.epub")

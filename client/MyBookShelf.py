@@ -268,6 +268,7 @@ class BookFrame(Qwidgt.QFrame):
         super(BookFrame,self).__init__(parent=parent)
         if not(book_path):
             book_path = here('clientdata/default')
+        self.book_title = book_path.split("/").pop()
         self.image_path = book_path + ".jpg"
         self.pdf_path = book_path + ".pdf"
         self.window = window
@@ -284,6 +285,7 @@ class BookFrame(Qwidgt.QFrame):
             self.btn_read = Qwidgt.QPushButton("READ",self)
             self.btn_read.clicked.connect(self.readBook)
             self.btn_return = Qwidgt.QPushButton("RETURN",self)
+            self.btn_return.clicked.connect(self.returnBook)
             hbox.addWidget(self.btn_read)
             hbox.addWidget(self.btn_return)
 
@@ -296,11 +298,12 @@ class BookFrame(Qwidgt.QFrame):
     def readBook(self):
         # Viewer 띄우기
         if self.pdf_path:
-            viewer_widget = BookViewer.BookViewer(self.pdf_path,parent=self.window)
+            viewer_widget = BookViewer.BookViewer(self.pdf_path,book_title=self.book_title,parent=self.window)
             viewer_widget.show()
 
     def returnBook(self):
         # return book to libaray server
+        logging.debug("return " )
         pass
 
 
