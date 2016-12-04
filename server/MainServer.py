@@ -6,7 +6,7 @@ from Protocol import *
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
 # logging.debug('This is a log message.')
 
-database = 'data/db/test.db'
+database = 'data/db/library.db'
 
 class MainServer(socketserver.ForkingTCPServer):
     def __init__(self,server_address,request_handler):

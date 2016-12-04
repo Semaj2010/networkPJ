@@ -10,7 +10,7 @@ import Protocol
 here = lambda x : os.path.join(os.path.dirname(__file__),os.path.pardir,x)
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
-DATABASE = here('data/db/test.db')
+DATABASE = here('data/db/library.db')
 class DataServer(ForkingTCPServer):
     def __init__(self,server_address,RequestHandlerClass):
         super(DataServer, self).__init__(server_address, RequestHandlerClass)

@@ -9,7 +9,7 @@ import os.path
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 here = lambda x : os.path.join(os.path.dirname(__file__),os.path.pardir,x)
 
-DATABASE = here('data/db/test.db')
+DATABASE = here('data/db/library.db')
 class LoginServer(protlib.LoggingTCPServer):
     pass
 
