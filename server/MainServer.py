@@ -3,7 +3,7 @@ import socketserver
 
 from Protocol import *
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
 # logging.debug('This is a log message.')
 
 database = 'data/db/test.db'

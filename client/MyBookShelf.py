@@ -21,7 +21,7 @@ here = lambda x : os.path.join(os.path.dirname(os.path.pardir),os.path.pardir,x)
 import Protocol
 from client import logindialog
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
 
 class Ui_MyBookShelf(object):
     def __init__(self,main_server_address=None,user_data=None):
@@ -29,8 +29,9 @@ class Ui_MyBookShelf(object):
             self.main_server_address=main_server_address
         else:
             self.main_server_address=('localhost',56789)
-        self.logger = logindialog.Logger()
-        self.parser = logindialog.Parser(module=Protocol)
+        self.dtp_server_address=None
+        self.logger = Protocol.Logger()
+        self.parser = Protocol.Parser(module=Protocol)
         self.user_data = None
         self.sock = None
         self.data_sock = None
@@ -180,6 +181,15 @@ class Ui_MyBookShelf(object):
                             size += READ_SIZE
                             save_file.write(temp)
                             # logging.debug(temp)
+                for i in range(recv_data.file_count):
+                    rdata = ""
+                    with open(here("clientdata/"+bytes.decode(recv_data.file_name[i])+".xml"),"w") as save_file:
+                        with self.data_sock.makefile("rwb",0) as f:
+                            # rdata += bytes.decode(f.readall())
+                            rdata = self.parser.parse(f)
+                            logging.debug(rdata)
+                            save_file.write(bytes.decode(rdata.memo_content))
+                            # save_file.write(rdata)
 
 
                             # receive file data
@@ -211,12 +221,15 @@ class Ui_MyBookShelf(object):
                 print(self.__class__ , "Login Failed")
 
     def library(self):
-        library = ELibraryWidget.ELibraryWidget(self.dtp_server_address,parent=self.centralwidget.parent(), user=self.user_data)
+        library = ELibraryWidget.ELibraryWidget(self.dtp_server_address,parent=self.centralwidget.parent(), user_data=self.user_data)
+        self.loadMyBooks()
         library.show()
 
 
     def loadMyBooks(self):
         # 내가 가지고 있는 책들을 불러오는 기능
+        if not(self.user_data):
+            return
 
         # 서버에 내 책 불러오기 요청
         t = "mybooks" # + "&" + self.user_data.userId + "&" + self.user_data.certkey
@@ -230,7 +243,8 @@ class Ui_MyBookShelf(object):
         # 서버에서 data 받아오기 (book info, pdf binary data, image data)
         rdata = self.requestDataServer("mybooks"+"&"+self.user_data.userId)
         # 책 image와 data 로드
-        self.book_data = [bytes.decode(bookname) for bookname in rdata.file_name if bookname != '']
+        if rdata:
+            self.book_data = [bytes.decode(bookname) for bookname in rdata.file_name if bookname != '']
         logging.debug(self.book_data)
 
         self.showMyBooks()
@@ -256,21 +270,22 @@ class Ui_MyBookShelf(object):
 
         for position, name in zip(positions, names):
             if name == '':
-                one_book_frame = BookFrame()
-                print(name, *position)
+                one_book_frame = BookFrame(self.user_data)
             else:
-                one_book_frame = BookFrame(path + name, window=self.centralwidget.parent())
+                one_book_frame = BookFrame(user_data=self.user_data,book_path=path + name, server_address=self.dtp_server_address,window=self.centralwidget.parent())
             grid.addWidget(one_book_frame, *position)
         return
 
 class BookFrame(Qwidgt.QFrame):
-    def __init__(self, book_path=None, parent=None, window=None):
+    def __init__(self, user_data,book_path=None, server_address=None,parent=None, window=None):
         super(BookFrame,self).__init__(parent=parent)
         if not(book_path):
             book_path = here('clientdata/default')
         self.book_title = book_path.split("/").pop()
         self.image_path = book_path + ".jpg"
         self.pdf_path = book_path + ".pdf"
+        self.user_data=user_data
+        self.server_address = server_address
         self.window = window
         self.initUI()
 
@@ -303,7 +318,30 @@ class BookFrame(Qwidgt.QFrame):
 
     def returnBook(self):
         # return book to libaray server
-        logging.debug("return " )
+        # send memo xml file to data server
+        try:
+            sock = socket.create_connection(self.server_address)
+            content = ''
+            logging.debug(self.book_title)
+            with open(here("clientdata/"+self.book_title+".xml"),"r") as xmlfd:
+                for r in xmlfd:
+                    content += r
+            f = sock.makefile("rwb",0)
+            data = Protocol.ReturnRequest(book_title = self.book_title,memo_content=content,user_id=self.user_data.userId)
+            f.write(data.serialize())
+            rdata = sock.recv(1024)
+            recv_data = Protocol.ReturnRequest.parse(rdata)
+
+            logging.debug("return "  + bytes.decode(recv_data.memo_content))
+            os.remove(here("clientdata/"+self.book_title+".pdf"))
+            self.setParent(None)
+        except IOError as e:
+            logging.debug(e)
+        except Exception as e:
+            logging.debug(e)
+        else:
+            f.close()
+            sock.close()
         pass
 
 

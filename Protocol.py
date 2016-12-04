@@ -19,9 +19,27 @@ class DataRequest(CStruct):
     img_file_size = CArray(7,CInt,default=[0,0,0,0,0,0,0])
     cert_key = CString(length=9,default='')
 
-class DataTranferRequest(CStruct):
+class ReturnRequest(CStruct):
     code = CShort(always=4)
-    cert_key = CString(length=9,default='')
+    book_title = CString(length=30, default='')
+    user_id = CString(length=20,default='')
+    memo_content = CString(length=AUTOSIZED)
+
+class LibraryRequest(CStruct):
+    code = CShort(always=5)
+    command = CString(length=30)
+    user_id = CString(length=30,default='')
+    certkey = CString(length=9,default='')
+    book_id = CString(length=15,default='')
+    book_title = CString(length=30,default='')
+    book_cnt = CInt(default=0)
+
+class BookData(CStruct):
+    book_id = CString(length=15,default='')
+    book_title = CString(length=30)
+    author = CString(length=50,default='')
+    book_cnt = CInt()
+
 
 class LoginData(CStruct):
     code = CShort(always=2)
@@ -30,8 +48,4 @@ class LoginData(CStruct):
     cert_key = CString(length=9,default='')
 
 
-class BookData(CStruct):
-    code = CShort(always=5)
-    timestamp = CString(length=20, default=lambda: _datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    binary = CString(length=AUTOSIZED)
 

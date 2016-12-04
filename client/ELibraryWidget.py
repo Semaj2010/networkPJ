@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 import sys
 import socket
 
+import Protocol
+
+logger = Protocol.Logger()
+parser = Protocol.Parser(module=Protocol)
+
 class ELibraryWidget(QMainWindow):
-    def __init__(self,server_address,user=None,parent=None):
+    def __init__(self,server_address,user_data=None,parent=None):
         super().__init__(parent=parent)
         self.initUI()
-        self.user = user
+        self.user_data = user_data
         self.server_address = server_address
+        self.loadBookList()
 
     def initUI(self):
 
@@ -27,16 +34,43 @@ class ELibraryWidget(QMainWindow):
 
     def loadBookList(self):
         # connect to server and request book list
-        sock = socket.create_connection(self.server_address)
+        try:
+            sock = socket.create_connection(self.server_address)
+            data = Protocol.LibraryRequest(command="load",user_id = self.user_data.userId, certkey=self.user_data.certkey)
+            with sock.makefile("rwb",0) as sfd:
+                sfd.write(data.serialize())
+                # for r in sfd:
+                #     recv_data = Protocol.BookData.parse(r)
+                #     print(recv_data)
+                # recv_data = parser.parse(sfd)
 
+            self.listbox.addItem(QListWidgetItem("cosmos"))
+            self.listbox.addItem(QListWidgetItem("little_prince"))
 
-
-        pass
+        except Exception as e:
+            print(e)
+        else:
+            sock.close()
 
 
     def borrow_book(self):
         # 선택한 리스트의 책 대출하기
-        book = self.listbox.selectedItems()
+        book = self.listbox.selectedItems()[0].text()
+        print(book)
+        try:
+            sock = socket.create_connection(self.server_address)
+            data = Protocol.LibraryRequest(command="borrow",user_id = self.user_data.userId, certkey=self.user_data.certkey)
+            data.book_title = book
+            with sock.makefile("rwb",0) as sfd:
+                sfd.write(data.serialize())
+                # recv_data = parser.parse(sfd)
+                # print(__file__ + " " + recv_data)
+
+        except Exception as e:
+            print(e)
+        else:
+            sock.close()
+
         return
 
 
