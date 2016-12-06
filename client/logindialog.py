@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from socket import create_connection
 
+import logging
 from PyQt5.QtWidgets import QDialog, QMainWindow
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QApplication
 
 from Protocol import *
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
 
 HOST = '127.0.0.1'
 
@@ -28,13 +30,13 @@ class LoginDialog(QDialog):
         try:
            self.sock = create_connection(self.serv_addr)
         except Exception as e:
-            print('Connect to Login server (%s:%s) Failed' % self.serv_addr)
+            logging.debug('Connect to Login server (%s:%s) Failed' % self.serv_addr)
             sys.exit()
         else:
-            print('Connect to Login server (%s:%s) Succeed' % self.serv_addr)
+            logging.debug('Connect to Login server (%s:%s) Succeed' % self.serv_addr)
 
-        # print(self.textName.text())
-        logger = Logger(also_print=True)
+        # logging.debug(self.textName.text())
+        logger = Logger()
         parser = Parser(logger)
         try:
             self.logindata = LoginData(userID=self.textName.text(),passwd=self.textPass.text())
@@ -42,22 +44,22 @@ class LoginDialog(QDialog):
             # self.sock.sendall(self.logindata.serialize())
             logger.log_and_write(self.f,self.logindata)
         except Exception as e:
-            print(e)
+            logging.debug(e)
 
         try:
             # data = self.sock.recv(Protocol.LoginData.sizeof())
             data = parser.parse(self.f)
             # self.logindata = Protocol.LoginData.parse(data)
-            print("what data is " , data)
+            logging.debug("what data is " + str(data))
             self.logindata = data
         except Exception as e:
-            print(e)
+            logging.debug(e)
         finally:
             self.sock.close()
 
 
         if self.logindata.cert_key != b'':
-            print(self.logindata.cert_key)
+            logging.debug(self.logindata.cert_key)
             self.accept()
         else:
             QMessageBox.warning(self,'Error', 'Bad user or password')

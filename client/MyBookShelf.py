@@ -108,7 +108,12 @@ class Ui_MyBookShelf(object):
 
         self.retranslateUi(MyBookShelf)
         QtCore.QMetaObject.connectSlotsByName(MyBookShelf)
+        MyBookShelf.keyPressEvent = self.keyPressEvent
         self.showMyBooks()
+
+    def keyPressEvent(self,e):
+        if e == QtCore.Qt.Key_F5:
+            self.loadMyBooks()
 
     def retranslateUi(self, MyBookShelf):
         _translate = QtCore.QCoreApplication.translate
@@ -222,8 +227,8 @@ class Ui_MyBookShelf(object):
 
     def library(self):
         library = ELibraryWidget.ELibraryWidget(self.dtp_server_address,parent=self.centralwidget.parent(), user_data=self.user_data)
-        self.loadMyBooks()
         library.show()
+        self.loadMyBooks()
 
 
     def loadMyBooks(self):
@@ -323,9 +328,12 @@ class BookFrame(Qwidgt.QFrame):
             sock = socket.create_connection(self.server_address)
             content = ''
             logging.debug(self.book_title)
-            with open(here("clientdata/"+self.book_title+".xml"),"r") as xmlfd:
-                for r in xmlfd:
-                    content += r
+            try:
+                with open(here("clientdata/"+self.book_title+".xml"),"rw+") as xmlfd:
+                    for r in xmlfd:
+                        content += r
+            except Exception as e:
+                pass
             f = sock.makefile("rwb",0)
             data = Protocol.ReturnRequest(book_title = self.book_title,memo_content=content,user_id=self.user_data.userId)
             f.write(data.serialize())
@@ -370,6 +378,7 @@ if __name__ == "__main__":
     print(here('clinetdata'))
     app = Qwidgt.QApplication(sys.argv)
     MyBookShelf = Qwidgt.QMainWindow()
+    MyBookShelf.setWindowTitle("MyBookShelf")
     ui = Ui_MyBookShelf(('localhost',56789))
     ui.setupUi(MyBookShelf)
     MyBookShelf.show()

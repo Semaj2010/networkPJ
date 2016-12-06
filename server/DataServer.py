@@ -50,8 +50,8 @@ class DataHandler(TCPHandler):
             if con:
                 con.rollback()
         else:
+            # compare user's certkey to receive data
             if(certkey == d_certkey):
-                print("SUCCESS!")
                 # Success!
                 try:
                     with con :
@@ -62,7 +62,6 @@ class DataHandler(TCPHandler):
                             WHERE br.book_id=bd.book_id and br.user_id=:id;
                             """, {'id':uid})
                         rows = scur.fetchall()
-                        logging.debug((rows[0],rows[0][0]))
                 except Exception as e:
                     logging.debug(e)
                 else:
@@ -80,6 +79,7 @@ class DataHandler(TCPHandler):
                             # self.temp_dict[certkey].append((r[0],r[1]))
                     except Exception as e:
                         logging.debug(e)
+                        self.reply(data)
                     else:
                         self.reply(data)
                         try:
@@ -104,17 +104,19 @@ class DataHandler(TCPHandler):
                                         l = f.read(1024)
                         except Exception as e:
                             logging.debug(e)
+                        # Get XML File - Memo File
                         try:
                             for r in rows:
                                 content = ""
                                 m = Protocol.ReturnRequest()
-                                with open(here('data/memo/'+r[0]+".xml"), "r") as f:
+                                with open(here('data/memo/'+r[0]+".xml"), "wr+") as f:
                                     for l in f:
                                         content += l
                                     m.memo_content = content
                                 self.reply(m)
                         except Exception as e:
                             logging.debug(e)
+                            self.reply(m)
                     return
             else:
                 data.command= Protocol.FAIL_MSG
@@ -145,7 +147,9 @@ class DataHandler(TCPHandler):
                       and book_id=(select book_id
                                    from book where title=:book_title)
             """
+            query2 = """update book set book_count = book_count+1 where title=:book_title"""
             cur.execute(query,{"uid":user_id,"book_title":book_title})
+            cur.execute(query2,{"book_title":book_title})
             con.commit()
             con.close()
         except Exception as e:
@@ -163,8 +167,10 @@ class DataHandler(TCPHandler):
                 while True:
                     row = cur.fetchone()
                     if not row:
+                        send_data = Protocol.BookData(book_id="")
                         break
-                    send_data = Protocol.BookData(book_id=row[0],book_title=row[1],book_cnt=row[2])
+                    else:
+                        send_data = Protocol.BookData(book_id=row[0],book_title=row[1],book_cnt=row[2])
                     # if send_data != "":
                     #     send_data += "&"
                     # send_data += row[1]
@@ -181,26 +187,54 @@ class DataHandler(TCPHandler):
                 book_title = bytes.decode(data.book_title)
                 uid = bytes.decode(data.user_id)
                 cur = con.cursor()
-                query = """insert into borrowbook (user_id, book_id, borrow_dates)
-                            select :id, book_id, DATE('now') from book
-                            where title = :book_title"""
-                query2 = """update book set book_count = book_count-1"""
-                cur.execute(query,{
-                    'id':uid,
-                    'book_title':book_title
-                })
-                cur.execute(query2)
-                con.commit()
-                con.close()
+                if (checkBorrowable(cur,book_title,uid)):
+                    query = """insert into borrowbook (user_id, book_id, borrow_dates)
+                                select :id, book_id, DATE('now') from book
+                                where title = :book_title"""
+                    query2 = """update book set book_count = book_count-1 where title=:book_title"""
+                    cur.execute(query,{
+                        'id':uid,
+                        'book_title':book_title
+                    })
+                    cur.execute(query2,{
+                        "book_title":book_title
+                    })
+                    con.commit()
+                else:
+                    data.command = Protocol.FAIL_MSG
             except Exception as e:
                 logging.debug(e)
-            return send_data
+            else:
+                con.close()
+        return data
+
+
+
+def checkBorrowable(cur, book_title, user_id):
+    try:
+        query = """
+            select book_id, book_count
+            from book
+            where title=:book_title
+        """
+        cur.execute(query,{"book_title":book_title})
+        row = cur.fetchone()
+        if row[1] < 1 :
+            return False
         else:
-            return send_data
-
-
-
-
+            query2 = """select count(book_id) from borrowbook where user_id=:user_id and book_id=:book_id"""
+            cur.execute(query2,{
+                "user_id":user_id,
+                "book_id":row[0]
+            })
+            ret = cur.fetchone()
+            if ret[0] > 0 :
+                return False
+    except Exception as e:
+        logging.debug(e)
+        return False
+    else:
+        return True
 
 
 

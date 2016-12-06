@@ -213,7 +213,10 @@ class BookViewer(QtWidgets.QMainWindow):
 
         for x in range(0, pdf_content.getNumPages()):  # text is extracted page wise
             pdf_text = ""  # A variable to store text extracted from a page
-            pdf_text = pdf_content.getPage(x).extractText()
+            try:
+                pdf_text = pdf_content.getPage(x).extractText()
+            except Exception as e:
+                print(e)
             # Text is extracted from page 'x'
             newframe = QtWidgets.QFrame()
             newframe.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
@@ -235,7 +238,7 @@ class BookViewer(QtWidgets.QMainWindow):
 
             self.page_frames.append(newframe)
 
-            text_extracted = text_extracted + "".join(i for i in pdf_text if ord(i) < 128)
+            # text_extracted = text_extracted + "".join(i for i in pdf_text if ord(i) < 128)
             # Non-Ascii characters are eliminated and text from each page is separated
         print(len(self.page_frames))
 
@@ -327,7 +330,7 @@ import sys
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     testmemo = {'1':['sunshine','hello'], '2':["Are you hungry"]}
-    bv = BookViewer("../data/books/little_prince.pdf",book_title="little_prince",memo_dict=testmemo)
+    bv = BookViewer("../data/books/computer-systems.pdf",book_title="computer-systems",memo_dict=testmemo)
     # m = MemoWidget(testmemo['1'][0])
     app.exec()
     # text = textract.process("data/books/cosmos.epub")

@@ -40,7 +40,6 @@ class BookData(CStruct):
     author = CString(length=50,default='')
     book_cnt = CInt()
 
-
 class LoginData(CStruct):
     code = CShort(always=2)
     userID = CString(length=50,default='')

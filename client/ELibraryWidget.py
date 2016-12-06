@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
 import sys
@@ -6,6 +7,9 @@ import socket
 
 import Protocol
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(lineno)d - %(message)s')
 logger = Protocol.Logger()
 parser = Protocol.Parser(module=Protocol)
 
@@ -18,7 +22,7 @@ class ELibraryWidget(QMainWindow):
         self.loadBookList()
 
     def initUI(self):
-
+        self.setWindowTitle("Library")
         self.setGeometry(100,100,600,700)
         self.listbox = QListWidget(self)
         self.listbox.setGeometry(50,100,300,500)
@@ -39,16 +43,21 @@ class ELibraryWidget(QMainWindow):
             data = Protocol.LibraryRequest(command="load",user_id = self.user_data.userId, certkey=self.user_data.certkey)
             with sock.makefile("rwb",0) as sfd:
                 sfd.write(data.serialize())
-                # for r in sfd:
-                #     recv_data = Protocol.BookData.parse(r)
-                #     print(recv_data)
-                # recv_data = parser.parse(sfd)
+            rdata = sock.recv(Protocol.BookData.sizeof())
+            while rdata:
+                parse_data = Protocol.BookData.parse(rdata)
+                logging.debug(parse_data)
+                if(parse_data.book_id == b''):
+                    break
+                self.listbox.addItem(QListWidgetItem(bytes.decode(parse_data.book_title)))
+                rdata = sock.recv(Protocol.BookData.sizeof())
+            # recv_data = parser.parse(sfd)
 
-            self.listbox.addItem(QListWidgetItem("cosmos"))
-            self.listbox.addItem(QListWidgetItem("little_prince"))
+            # self.listbox.addItem(QListWidgetItem("cosmos"))
+            # self.listbox.addItem(QListWidgetItem("little_prince"))
 
         except Exception as e:
-            print(e)
+            logging.debug(e)
         else:
             sock.close()
 
@@ -65,13 +74,18 @@ class ELibraryWidget(QMainWindow):
                 sfd.write(data.serialize())
                 # recv_data = parser.parse(sfd)
                 # print(__file__ + " " + recv_data)
+                recv_data = parser.parse(sfd)
+                logging.debug(recv_data.command)
 
         except Exception as e:
             print(e)
         else:
             sock.close()
-
         return
+
+    def closeEvent(self, QCloseEvent):
+        from PyQt5.QtCore import Qt
+        self.parent().keyPressEvent(Qt.Key_F5)
 
 
 
